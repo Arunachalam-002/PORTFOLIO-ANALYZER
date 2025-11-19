@@ -1,0 +1,16 @@
+Flask
+Flask-Login
+Flask-Bcrypt
+Flask-SQLAlchemy
+flask-pymongo
+python-dotenv
+scikit-learn
+pandas
+numpy
+yfinance
+prophet
+arch
+thefuzz
+gunicorn
+twelvedata
+requests

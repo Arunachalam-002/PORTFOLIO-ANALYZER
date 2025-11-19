@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Edit Portfolio</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Orbitron', sans-serif;
+      background: #0f0f0f;
+      overflow-x: hidden;
+      color: white;
+    }
+
+    .glass-box {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 30px;
+      margin: 40px auto;
+      max-width: 900px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 0 20px #00ff99;
+    }
+
+    h2 {
+      text-align: center;
+      color: #00ff99;
+      margin-bottom: 30px;
+    }
+
+    label {
+      display: block;
+      margin: 10px 0 5px;
+      color: #ddd;
+    }
+
+    input, button {
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      font-size: 16px;
+      margin-bottom: 15px;
+      width: 100%;
+    }
+
+    input[type="date"] {
+      background-color: #1e1e1e;
+      color: white;
+    }
+
+    table {
+      width: 100%;
+      margin-bottom: 20px;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 10px;
+      text-align: center;
+    }
+
+    th {
+      color: #00ff99;
+    }
+
+    td input {
+      width: 100%;
+      background-color: #1e1e1e;
+      color: white;
+    }
+
+    .buttons {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .add-btn, .remove-btn, .submit-btn {
+      background-color: #00ff99;
+      color: black;
+      font-weight: bold;
+      cursor: pointer;
+      width: 48%;
+      transition: background-color 0.2s ease;
+    }
+
+    .submit-btn {
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    .add-btn:hover, .remove-btn:hover, .submit-btn:hover {
+      background-color: #00cc77;
+    }
+
+    a {
+      display: block;
+      text-align: center;
+      margin-top: 20px;
+      color: #00ff99;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    canvas {
+      position: fixed;
+      z-index: -1;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="particles"></canvas>
+
+  <div class="glass-box">
+    <h2>Edit Your Portfolio</h2>
+
+    <form method="POST">
+      <label for="portfolio_date">Portfolio Date:</label>
+      <input type="date" name="portfolio_date" value="{{ portfolio_date or '' }}" required>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Company</th>
+            <th>Shares</th>
+            <th>Avg Price</th>
+          </tr>
+        </thead>
+        <tbody id="portfolio-rows">
+          {% for entry in portfolio %}
+          <tr>
+            <td><input type="text" name="company" value="{{ entry.symbol }}" required></td>
+            <td><input type="number" name="shares" value="{{ entry.shares }}" required></td>
+            <td><input type="number" step="0.01" name="avg_price" value="{{ entry.avg_price }}" required></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <div class="buttons">
+        <button type="button" class="add-btn" onclick="addRow()">+ Add Row</button>
+        <button type="button" class="remove-btn" onclick="removeRow()">− Remove Row</button>
+      </div>
+
+      <button type="submit" class="submit-btn">Update Portfolio</button>
+    </form>
+
+    <a href="{{ url_for('home') }}">← Back to Dashboard</a>
+  </div>
+
+  <!-- Optional Particle Effect JS -->
+  <script>
+    // Particle background
+    const canvas = document.getElementById("particles");
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    let particles = [];
+
+    for (let i = 0; i < 80; i++) {
+      particles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        radius: Math.random() * 2,
+        dx: (Math.random() - 0.5) * 0.8,
+        dy: (Math.random() - 0.5) * 0.8
+      });
+    }
+
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach(p => {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fillStyle = "#00ff99";
+        ctx.fill();
+        p.x += p.dx;
+        p.y += p.dy;
+
+        if (p.x < 0 || p.x > canvas.width) p.dx *= -1;
+        if (p.y < 0 || p.y > canvas.height) p.dy *= -1;
+      });
+      requestAnimationFrame(animate);
+    }
+    animate();
+  </script>
+
+  <script>
+    function addRow() {
+      const table = document.getElementById("portfolio-rows");
+      const newRow = document.createElement("tr");
+      newRow.innerHTML = `
+        <td><input type="text" name="company" required></td>
+        <td><input type="number" name="shares" required></td>
+        <td><input type="number" step="0.01" name="avg_price" required></td>
+      `;
+      table.appendChild(newRow);
+    }
+
+    function removeRow() {
+      const table = document.getElementById("portfolio-rows");
+      if (table.rows.length > 1) {
+        table.deleteRow(-1);
+      }
+    }
+  </script>
+</body>
+</html>

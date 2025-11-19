@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Portfolio Analysis Result</title>
+  <style>
+    /* ───── Dark-neon theme (unchanged) ───── */
+    body{
+      margin:0;
+      font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
+      background:#0f0f0f;
+      color:#fff;
+      height:100vh;
+      overflow-y:auto;
+    }
+    #particles-js{
+      position:fixed;top:0;left:0;width:100%;height:100%;
+      z-index:-1;background:#0f0f0f;
+    }
+
+    .container{max-width:1100px;margin:60px auto;
+               background:rgba(255,255,255,.08);
+               border-radius:20px;padding:35px;
+               backdrop-filter:blur(10px);
+               box-shadow:0 0 30px rgba(0,255,128,.22)}
+
+    h1{text-align:center;color:#39ff14;margin-bottom:40px}
+
+    /* summary + stats boxes */
+    .box{background:rgba(255,255,255,.05);
+         border:1px solid rgba(0,255,128,.25);
+         border-radius:12px;padding:22px;
+         box-shadow:0 0 15px rgba(0,255,128,.12);margin-bottom:28px}
+
+    .box h2{margin:0 0 12px;font-size:18px;color:#00ffcc;
+            border-bottom:1px solid rgba(0,255,128,.2);padding-bottom:6px}
+
+    ul{list-style:none;padding-left:20px;margin:0}
+    li{margin:6px 0;font-size:16px;line-height:1.6}
+
+    /* side-by-side stats */
+    .stats-row{display:flex;gap:25px;flex-wrap:wrap}
+    .stats-row .box{flex:1 1 320px;min-width:260px}
+
+    /* table */
+    table{width:100%;border-collapse:collapse;margin-top:15px;
+          border-radius:10px;overflow:hidden;
+          box-shadow:0 0 10px rgba(0,255,128,.12)}
+    th{background:rgba(0,255,128,.12);color:#00ff99;padding:12px;text-align:center}
+    td{padding:12px;text-align:center;border-bottom:1px solid rgba(255,255,255,.12)}
+
+    /* buttons */
+    .btn{display:inline-block;margin:30px 10px 0;
+         background:#00ff99;color:#000;padding:12px 25px;
+         border-radius:6px;font-weight:bold;text-decoration:none}
+    .btn:hover{background:#00e68a}
+
+    @media(max-width:768px){
+      .stats-row{flex-direction:column}
+    }
+  </style>
+</head>
+<body>
+  <div id="particles-js"></div>
+
+  <div class="container">
+    <h1>📊 Portfolio Analysis Result</h1>
+
+    <!-- Summary Box -->
+    <div class="box" style="text-align:center">
+      <h2>Summary</h2>
+      <p><strong>Total Investment:</strong> ₹{{ total_investment }}</p>
+    </div>
+
+    <!-- Historical & ML Stats side-by-side -->
+    <div class="stats-row">
+      <div class="box">
+        <h2>Historical Stats (5Y)</h2>
+        <ul>
+          <li>Expected Return: {{ expected_return }}%</li>
+          <li>Volatility: {{ volatility }}%</li>
+          <li>Sharpe Ratio: {{ sharpe_ratio }}</li>
+          <li>VaR (5%): {{ var_5 }}%</li>
+          <li>Max Drawdown: {{ max_drawdown }}%</li>
+          <li>Beta: {{ beta }}</li>
+        </ul>
+      </div>
+
+      <div class="box">
+        <h2>ML Forecast (30D)</h2>
+        <ul>
+          <li>Expected Return: {{ ml_predicted_return }}%</li>
+          <li>Volatility: {{ ml_predicted_volatility }}%</li>
+          <li>Sharpe Ratio: {{ ml_predicted_sharpe }}</li>
+          <li>ML Diversification Score: {{ ml_diversification_score }}</li>
+          <li>Predicted Risk Level: {{ ml_risk_level }}</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Portfolio Table -->
+    <div class="box">
+      <h2>Portfolio Details</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Symbol</th><th>Shares</th><th>Avg Price (₹)</th>
+            <th>Investment (₹)</th><th>Weight (%)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in portfolio_data %}
+          <tr>
+            <td>{{ p.symbol }}</td>
+            <td>{{ p.shares }}</td>
+            <td>{{ p.avg_price }}</td>
+            <td>{{ p.investment }}</td>
+            <td>{{ p.weight }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Buttons -->
+    <div style="text-align:center">
+      <a href="{{ url_for('home') }}" class="btn">← Back to Home</a>
+      <a href="{{ url_for('edit_portfolio') }}" class="btn">✏️ Edit Portfolio</a>
+    </div>
+  </div>
+
+  <!-- Particle.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+  <script>
+    particlesJS("particles-js",{
+      "particles":{"number":{"value":80},"color":{"value":"#00ff99"},
+      "shape":{"type":"circle"},"opacity":{"value":0.5},"size":{"value":3},
+      "line_linked":{"enable":true,"distance":150,"color":"#00ff99",
+      "opacity":0.4,"width":1},"move":{"enable":true,"speed":2}}});
+  </script>
+</body>
+</html>

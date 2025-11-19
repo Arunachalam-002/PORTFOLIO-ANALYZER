@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Portfolio Analysis</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #0f0f0f;
+      color: #ffffff;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 30px;
+      background: #1c1c1c;
+      border-radius: 10px;
+      box-shadow: 0 0 20px #00c9a7;
+    }
+
+    h1 {
+      text-align: center;
+      color: #00c9a7;
+      margin-bottom: 30px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      color: #ccc;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="date"] {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 5px;
+      margin-bottom: 15px;
+      background: #333;
+      color: white;
+    }
+
+    table {
+      width: 100%;
+      margin-bottom: 20px;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid #444;
+    }
+
+    th {
+      background-color: #222;
+      color: #00c9a7;
+    }
+
+    td input {
+      width: 95%;
+    }
+
+    button,
+    .btn {
+      background-color: #00c9a7;
+      color: #000;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 5px;
+      margin-right: 10px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    button:hover,
+    .btn:hover {
+      background-color: #00a68f;
+    }
+
+    .error {
+      color: #ff4d4d;
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    a {
+      color: #00c9a7;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    .centered-btn {
+      text-align: center;
+      margin-top: 30px;
+    }
+  </style>
+  <script>
+    function addRow() {
+      const tbody = document.getElementById('portfolio-body');
+      const row = tbody.insertRow();
+      row.innerHTML = `
+        <td><input type="text" name="company" placeholder="Company Name" required></td>
+        <td><input type="number" name="shares" min="1" step="1" required></td>
+        <td><input type="number" name="avg_price" min="0.01" step="0.01" required></td>
+      `;
+    }
+  </script>
+</head>
+<body>
+  <div class="container">
+    <h1>Welcome, {{ current_user.full_name }}</h1>
+
+    {% if error %}
+      <p class="error">{{ error }}</p>
+    {% endif %}
+
+    <form method="post">
+      <div class="credentials">
+        <div>
+          <label for="portfolio_date">Portfolio Date</label>
+          <input type="date" id="portfolio_date" name="portfolio_date" required>
+        </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Company Name</th>
+            <th>Shares</th>
+            <th>Avg Price (₹)</th>
+          </tr>
+        </thead>
+        <tbody id="portfolio-body">
+          <tr>
+            <td><input type="text" name="company" placeholder="Company Name" required></td>
+            <td><input type="number" name="shares" min="1" step="1" required></td>
+            <td><input type="number" name="avg_price" min="0.01" step="0.01" required></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <button type="button" onclick="addRow()">Add Another Stock</button>
+      <button type="submit">Analyze Portfolio</button>
+    </form>
+
+    <div class="centered-btn">
+      <a href="{{ url_for('refresh_cache') }}" class="btn">🔄 Refresh Cache</a>
+    </div>
+
+    <p style="text-align: center; margin-top: 20px;"><a href="/logout">Logout</a></p>
+  </div>
+</body>
+</html>
