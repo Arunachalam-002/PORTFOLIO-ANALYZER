@@ -3,8 +3,23 @@ services:
     name: portfolio-analyzer
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: python app.py
+    startCommand: gunicorn -w 4 -b 0.0.0.0:$PORT app:app
     autoDeploy: true
     envVars:
-      - key: PORT
-        value: 10000
+      # REMOVE hard-coded PORT; Render will set the PORT env var automatically
+      - key: MONGO_URI
+        value: ${MONGO_URI}
+      - key: MONGO_DBNAME
+        value: ${MONGO_DBNAME}
+      - key: CLIQ_INCOMING_WEBHOOK
+        value: ${CLIQ_INCOMING_WEBHOOK}
+      - key: BASE_URL
+        value: ${BASE_URL}
+      - key: APP_INTERNAL_SECRET
+        value: ${APP_INTERNAL_SECRET}
+      - key: SECRET_KEY
+        value: ${SECRET_KEY}
+      - key: KITE_API_KEY
+        value: ${KITE_API_KEY}
+      - key: KITE_API_SECRET
+        value: ${KITE_API_SECRET}
