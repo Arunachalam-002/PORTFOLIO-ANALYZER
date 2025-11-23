@@ -2,11 +2,14 @@ services:
   - type: web
     name: portfolio-analyzer
     env: python
-    buildCommand: pip install -r requirements.txt
+    # Install deps then run the instrument-builder once during build.
+    # The build script must read Kite creds from env vars (KITE_API_KEY, KITE_API_SECRET, optionally KITE_ACCESS_TOKEN)
+    buildCommand: >
+      pip install -r requirements.txt &&
+      python scripts/build_instruments.py
     startCommand: gunicorn -w 4 -b 0.0.0.0:$PORT app:app
     autoDeploy: true
     envVars:
-      # REMOVE hard-coded PORT; Render will set the PORT env var automatically
       - key: MONGO_URI
         value: ${MONGO_URI}
       - key: MONGO_DBNAME
@@ -23,3 +26,6 @@ services:
         value: ${KITE_API_KEY}
       - key: KITE_API_SECRET
         value: ${KITE_API_SECRET}
+      # optional but recommended if your build script uses an access token
+      - key: KITE_ACCESS_TOKEN
+        value: ${KITE_ACCESS_TOKEN}
