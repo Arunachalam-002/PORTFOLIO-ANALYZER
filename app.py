@@ -33,33 +33,6 @@ load_dotenv()
 
 # ---------------- App / DB setup ----------------
 app = Flask(__name__)
-
-@app.route("/debug/instruments")
-def debug_instruments():
-    import os
-    from pathlib import Path
-
-    # Path where you EXPECT the file to be
-    expected_path = Path(app.root_path) / "data" / "instruments.json"
-
-    info = {
-        "app.root_path": str(app.root_path),
-        "cwd": os.getcwd(),
-        "expected_file_path": str(expected_path),
-        "exists": expected_path.exists(),
-        "size_bytes": expected_path.stat().st_size if expected_path.exists() else "N/A",
-        "parent_dir_contents": [],
-    }
-
-    # List directory contents
-    try:
-        info["parent_dir_contents"] = os.listdir(expected_path.parent)
-    except Exception as e:
-        info["parent_dir_contents"] = f"Error listing directory: {e}"
-
-    return info
-
-
 # SECRET_KEY (from Render or local .env)
 app.secret_key = os.getenv("SECRET_KEY", "default-secret-key")
 
