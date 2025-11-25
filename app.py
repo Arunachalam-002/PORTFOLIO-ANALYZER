@@ -5,6 +5,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from functools import wraps
 
+from cliq_auth import cliq_bp 
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, abort
 from flask_login import LoginManager, login_required, current_user, login_user, logout_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -33,6 +34,9 @@ load_dotenv()
 
 # ---------------- App / DB setup ----------------
 app = Flask(__name__)
+
+app.register_blueprint(cliq_bp)
+
 # SECRET_KEY (from Render or local .env)
 app.secret_key = os.getenv("SECRET_KEY", "default-secret-key")
 
