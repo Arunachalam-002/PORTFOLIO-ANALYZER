@@ -36,8 +36,9 @@ app = Flask(__name__)
 # SECRET_KEY (from Render or local .env)
 app.secret_key = os.getenv("SECRET_KEY", "default-secret-key")
 
-# <<< CHANGE — use Render's Atlas URI automatically
-mongo_uri = os.getenv("MONGO_URI", "mongodb://localhost:27017/portfolio_db")
+# read MONGO_URI and strip any accidental whitespace/newlines (safe if env var missing)
+raw_mongo_uri = os.getenv("MONGO_URI", "mongodb://localhost:27017/portfolio_db")
+mongo_uri = (raw_mongo_uri or "").strip()
 app.config["MONGO_URI"] = mongo_uri
 
 # <<< CHANGE — support Atlas database name
