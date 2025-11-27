@@ -38,15 +38,20 @@ app = Flask(__name__)
 app.register_blueprint(cliq_bp)
 
 # SECRET_KEY (from Render or local .env)
-app.secret_key = os.getenv("SECRET_KEY", "default-secret-key")
+app.secret_key = os.getenv("SECRET_KEY", "my-secret-2216")
 
-# read MONGO_URI and strip any accidental whitespace/newlines (safe if env var missing)
-raw_mongo_uri = os.getenv("MONGO_URI", "mongodb://localhost:27017/portfolio_db")
+# read MONGO_URI and strip any accidental whitespace/newlines
+# default directly to your Atlas cluster (safe for hackathon)
+raw_mongo_uri = os.getenv(
+    "MONGO_URI",
+    "mongodb+srv://Arunachalam_db_user:Arun2216@stockdb.tvcvlda.mongodb.net/portfolio_db?retryWrites=true&w=majority"
+)
 mongo_uri = (raw_mongo_uri or "").strip()
 app.config["MONGO_URI"] = mongo_uri
 
-# <<< CHANGE — support Atlas database name
+# DB name (same for Atlas + local)
 app.config["MONGO_DBNAME"] = os.getenv("MONGO_DBNAME", "portfolio_db")
+
 
 mongo.init_app(app)
 
@@ -278,13 +283,16 @@ def home():
         except Exception as e:
             return render_template("index.html", error=f"Analysis failed: {e}")
 
-        return render_template("result.html",
-                               full_name=current_user.full_name,
-                               email=current_user.email,
-                               phone=current_user.phone,
-                               goal=current_user.goal,
-                               portfolio_date=portfolio_date,
-                               result=result, **result)
+        return render_template(
+            "result.html",
+            full_name=current_user.full_name,
+            email=current_user.email,
+            phone=current_user.phone,
+            goal=current_user.goal,
+            portfolio_date=portfolio_date,
+            result=result,
+            **result
+        )
 
     # GET: show saved portfolio if present (and show analysis)
     saved = list(mongo.db.portfolios.find({"user_id": ObjectId(current_user.id)}))
@@ -295,16 +303,68 @@ def home():
             avg_prices_list = [float(item["avg_price"]) for item in saved]
             portfolio_date = saved[0].get("date", "")
             result = analyze_portfolio(symbols, shares_list, avg_prices_list)
-            return render_template("result.html",
-                                   full_name=current_user.full_name,
-                                   email=current_user.email,
-                                   phone=current_user.phone,
-                                   goal=current_user.goal,
-                                   portfolio_date=portfolio_date,
-                                   result=result, **result)
+            return render_template(
+                "result.html",
+                full_name=current_user.full_name,
+                email=current_user.email,
+                phone=current_user.phone,
+                goal=current_user.goal,
+                portfolio_date=portfolio_date,
+                result=result,
+                **result
+            )
         except Exception as e:
             error = f"Failed to analyze saved data: {e}"
     return render_template("index.html", error=error)
+
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+# CLIQ DASHBOARD ROUTE – this is what we will open inside Zoho Cliq
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+@app.route("/cliq-dashboard", methods=["GET"])
+@login_required
+def cliq_dashboard():
+    """
+    Dedicated route for Zoho Cliq widget.
+    Shows the same portfolio analysis result as the main home page,
+    based on the logged-in user's saved portfolio.
+    """
+    try:
+        saved = list(mongo.db.portfolios.find({"user_id": ObjectId(current_user.id)}))
+    except Exception:
+        app.logger.exception(
+            "Failed to read portfolio for user %s in cliq_dashboard",
+            getattr(current_user, "id", None)
+        )
+        saved = []
+
+    if saved:
+        try:
+            symbols = [item["symbol"] for item in saved]
+            shares_list = [float(item["shares"]) for item in saved]
+            avg_prices_list = [float(item["avg_price"]) for item in saved]
+            portfolio_date = saved[0].get("date", "")
+            result = analyze_portfolio(symbols, shares_list, avg_prices_list)
+            return render_template(
+                "result.html",
+                full_name=current_user.full_name,
+                email=current_user.email,
+                phone=current_user.phone,
+                goal=current_user.goal,
+                portfolio_date=portfolio_date,
+                result=result,
+                **result
+            )
+        except Exception as e:
+            error = f"Failed to analyze saved data: {e}"
+            return render_template("index.html", error=error)
+
+    # No saved portfolio – show the input page with a friendly message
+    return render_template(
+        "index.html",
+        error="No saved portfolio found. Please add your holdings to start analysis."
+    )
+# <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
 
 # ---------------- Edit portfolio (validate -> save -> analyze -> render result) ----------------
 @app.route("/edit_portfolio", methods=["GET", "POST"])
@@ -320,9 +380,12 @@ def edit_portfolio():
         app.logger.info("edit_portfolio POST: companies=%s shares=%s avg_prices=%s", companies, shares, avg_prices)
 
         if not (len(companies) == len(shares) == len(avg_prices)):
-            return render_template("edit_portfolio.html", error="Input list length mismatch.",
-                                   portfolio=[{"symbol":c,"shares":s,"avg_price":p} for c,s,p in zip(companies,shares,avg_prices)],
-                                   portfolio_date=portfolio_date)
+            return render_template(
+                "edit_portfolio.html",
+                error="Input list length mismatch.",
+                portfolio=[{"symbol": c, "shares": s, "avg_price": p} for c, s, p in zip(companies, shares, avg_prices)],
+                portfolio_date=portfolio_date
+            )
 
         new_portfolio = []
         try:
@@ -392,18 +455,29 @@ def edit_portfolio():
                 return redirect(url_for("home"))
 
             flash("Portfolio updated and analyzed.", "success")
-            return render_template("result.html",
-                                   full_name=current_user.full_name,
-                                   email=current_user.email,
-                                   phone=current_user.phone,
-                                   goal=current_user.goal,
-                                   portfolio_date=portfolio_date,
-                                   result=result, **result)
+            return render_template(
+                "result.html",
+                full_name=current_user.full_name,
+                email=current_user.email,
+                phone=current_user.phone,
+                goal=current_user.goal,
+                portfolio_date=portfolio_date,
+                result=result,
+                **result
+            )
 
         except Exception as e:
             app.logger.exception("Failed to update portfolio for user %s", current_user.id)
-            portfolio_for_render = [{"symbol":c,"shares":s,"avg_price":p} for c,s,p in zip(companies,shares,avg_prices)]
-            return render_template("edit_portfolio.html", error=f"Update failed: {e}", portfolio=portfolio_for_render, portfolio_date=portfolio_date)
+            portfolio_for_render = [
+                {"symbol": c, "shares": s, "avg_price": p}
+                for c, s, p in zip(companies, shares, avg_prices)
+            ]
+            return render_template(
+                "edit_portfolio.html",
+                error=f"Update failed: {e}",
+                portfolio=portfolio_for_render,
+                portfolio_date=portfolio_date
+            )
 
     # GET: render edit form with DB values
     try:
