@@ -5,7 +5,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from functools import wraps
 
-from cliq_auth import cliq_bp 
+from cliq_auth import cliq_bp
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, abort
 from flask_login import LoginManager, login_required, current_user, login_user, logout_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -35,10 +35,14 @@ load_dotenv()
 # ---------------- App / DB setup ----------------
 app = Flask(__name__)
 
-app.register_blueprint(cliq_bp)
+# Register Cliq blueprint with /api prefix
+# This makes your Cliq endpoints:
+#   /api/cliq/portfolio/<user_id>
+#   /api/cliq/portfolio/<user_id>/holdings
+app.register_blueprint(cliq_bp, url_prefix="/api")
 
 # SECRET_KEY (from Render or local .env)
-app.secret_key = os.getenv("SECRET_KEY", "my-secret-2216")
+app.secret_key = os.getenv("SECRET_KEY", "default-secret-key")
 
 # read MONGO_URI and strip any accidental whitespace/newlines
 # default directly to your Atlas cluster (safe for hackathon)
@@ -51,7 +55,6 @@ app.config["MONGO_URI"] = mongo_uri
 
 # DB name (same for Atlas + local)
 app.config["MONGO_DBNAME"] = os.getenv("MONGO_DBNAME", "portfolio_db")
-
 
 mongo.init_app(app)
 
@@ -103,7 +106,10 @@ def admin_required(f):
     @wraps(f)
     def wrapped(*args, **kwargs):
         if not getattr(current_user, "is_admin", False):
-            app.logger.warning("Unauthorized admin access attempt by user id=%s", getattr(current_user, "id", "anon"))
+            app.logger.warning(
+                "Unauthorized admin access attempt by user id=%s",
+                getattr(current_user, "id", "anon")
+            )
             abort(403)
         return f(*args, **kwargs)
     return wrapped
@@ -214,7 +220,7 @@ def add_manual_mapping():
     key = data.get("key")
     token = data.get("token")
     if not key or not token:
-        return jsonify({"error":"key and token required"}), 400
+        return jsonify({"error": "key and token required"}), 400
     p = Path("data/kite_instruments_map.json")
     if p.exists():
         try:
@@ -257,7 +263,10 @@ def home():
                 if not resolved_sym:
                     raise ValueError(f"Could not resolve '{user_input}' to any Kite instrument.")
                 if conf < 60:
-                    app.logger.warning("Auto-resolve low confidence for input '%s' -> %s (%.1f%%)", user_input, resolved_sym, conf)
+                    app.logger.warning(
+                        "Auto-resolve low confidence for input '%s' -> %s (%.1f%%)",
+                        user_input, resolved_sym, conf
+                    )
                 symbol = resolved_sym
                 portfolio_rows.append({
                     "symbol": symbol,
@@ -320,7 +329,7 @@ def home():
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 # CLIQ DASHBOARD ROUTE – this is what we will open inside Zoho Cliq
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-@app.route("/cliq-dashboard", methods=["GET"])
+@app.route("/cliq-dashboard", methods=["GET", "POST"])
 @login_required
 def cliq_dashboard():
     """
@@ -363,8 +372,6 @@ def cliq_dashboard():
         "index.html",
         error="No saved portfolio found. Please add your holdings to start analysis."
     )
-# <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-
 
 # ---------------- Edit portfolio (validate -> save -> analyze -> render result) ----------------
 @app.route("/edit_portfolio", methods=["GET", "POST"])
@@ -377,13 +384,17 @@ def edit_portfolio():
         shares = request.form.getlist("shares[]") or request.form.getlist("shares")
         avg_prices = request.form.getlist("avg_price[]") or request.form.getlist("avg_price")
 
-        app.logger.info("edit_portfolio POST: companies=%s shares=%s avg_prices=%s", companies, shares, avg_prices)
+        app.logger.info(
+            "edit_portfolio POST: companies=%s shares=%s avg_prices=%s",
+            companies, shares, avg_prices
+        )
 
         if not (len(companies) == len(shares) == len(avg_prices)):
             return render_template(
                 "edit_portfolio.html",
                 error="Input list length mismatch.",
-                portfolio=[{"symbol": c, "shares": s, "avg_price": p} for c, s, p in zip(companies, shares, avg_prices)],
+                portfolio=[{"symbol": c, "shares": s, "avg_price": p}
+                           for c, s, p in zip(companies, shares, avg_prices)],
                 portfolio_date=portfolio_date
             )
 
@@ -410,7 +421,10 @@ def edit_portfolio():
 
                 if not sym:
                     # fallback: use raw input as canonical symbol (uppercase) and log warning
-                    app.logger.warning("auto_resolve could not resolve '%s' at row %d. Using raw input as symbol.", raw_input, idx)
+                    app.logger.warning(
+                        "auto_resolve could not resolve '%s' at row %d. Using raw input as symbol.",
+                        raw_input, idx
+                    )
                     sym = raw_input.upper()
 
                 # numeric conversions
@@ -418,7 +432,9 @@ def edit_portfolio():
                     s_val = float(s)
                     p_val = float(p)
                 except Exception:
-                    raise ValueError(f"Invalid numeric value at row {idx} for '{raw_input}' (shares='{s}', avg_price='{p}')")
+                    raise ValueError(
+                        f"Invalid numeric value at row {idx} for '{raw_input}' (shares='{s}', avg_price='{p}')"
+                    )
 
                 if s_val < 0 or p_val < 0:
                     raise ValueError(f"Shares and avg_price must be non-negative at row {idx}")
@@ -483,10 +499,34 @@ def edit_portfolio():
     try:
         portfolio = list(mongo.db.portfolios.find({"user_id": ObjectId(current_user.id)}))
     except Exception:
-        app.logger.exception("Failed to read portfolio for user %s", getattr(current_user, "id", None))
+        app.logger.exception(
+            "Failed to read portfolio for user %s",
+            getattr(current_user, "id", None)
+        )
         portfolio = []
     portfolio_date = portfolio[0].get("date", "") if portfolio else ""
     return render_template("edit_portfolio.html", portfolio=portfolio, portfolio_date=portfolio_date)
+
+# ----- STATIC DOORS FOR CLIQ WIDGETS (DO NOT AFFECT MAIN WEBSITE) -----
+
+# Landing page 1 → Always opens login UI only
+@app.route("/widget-login", methods=["GET"])
+def widget_login():
+    return render_template("login.html")
+
+# Landing page 2 → Opens input page (no analysis)
+@app.route("/widget-input", methods=["GET"])
+@login_required
+def widget_input():
+    return render_template("index.html")
+
+# Landing page 3 → Opens summary page (analysis UI)
+@app.route("/widget-summary", methods=["GET"])
+@login_required
+def widget_summary():
+    return render_template("result.html")
+
+# <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 # ---------------- Run app ----------------
 if __name__ == "__main__":
